@@ -61,6 +61,10 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('abc', '+(a*)'));
     assert(!isMatch('bca', '+(a*)'));
     assert(isMatch('abc', '+(*)c'));
+    assert(makeRe('+(foo/*)').source.includes('\\\\+'));
+    assert(!isMatch('foo/bar', '+(foo/*)'));
+    assert(isMatch('***', '+(\\\\*)'));
+    assert(isMatch('***', '+("*")'));
   });
 
   it('should preserve non-risky extglobs by default', () => {
