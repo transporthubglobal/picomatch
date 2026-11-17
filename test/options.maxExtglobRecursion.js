@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const { spawnSync } = require('child_process');
 const { isMatch, makeRe } = require('..');
 
 describe('options.maxExtglobRecursion', () => {
@@ -559,6 +560,19 @@ describe('options.maxExtglobRecursion', () => {
 });
 
     );
+
+    const script = [
+      "const { isMatch } = require('./');",
+      "isMatch('a'.repeat(32) + 'y', '+(*)z');",
+      "isMatch('a'.repeat(32) + 'y', '+(*a)z');"
+    ].join(';');
+
+    const result = spawnSync(process.execPath, ['-e', script], {
+      encoding: 'utf8',
+      timeout: 3000
+    });
+    assert.strictEqual(result.error, undefined, 'adversarial matching should complete within 3 seconds');
+    assert.strictEqual(result.status, 0, result.stderr);
 
     assert(isMatch('abc', '+(*)'));
     assert(isMatch('bba', '+(*a)'));
