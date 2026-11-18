@@ -71,8 +71,22 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('abc', '+(a*)'));
     assert(!isMatch('bca', '+(a*)'));
     assert(isMatch('abc', '+(*)c'));
-    assert(makeRe('+(foo/*)').source.includes('\\+'));
-    assert(!isMatch('foo/bar', '+(foo/*)'));
+    // Complex branches and whitespace must retain their original semantics.
+    assert(isMatch('foo/bar', '+(foo/*)'));
+    assert(isMatch(' xa', '+( *a)'));
+    assert(!isMatch('xa', '+( *a)'));
+
+    // Multiple wildcard atoms in a simple branch are flattened without
+    // changing the repeated branch's language.
+    assert(isMatch('ab', '+(*a*b)'));
+    assert(isMatch('aabb', '+(*a*b)'));
+    assert(isMatch('abab', '+(*a*b)'));
+    assert(!isMatch('bb', '+(*a*b)'));
+    assert(isMatch('abcabc', '+(a*b*c)'));
+    assert(!isMatch('acbac', '+(a*b*c)'));
+
+    // Bash mode uses its own wildcard atom (which may cross path separators).
+    assert(isMatch('a/b', '+(a*b)', { bash: true }));
     assert(isMatch('***', '+(\\*)'));
     assert(isMatch('***', '+("*")'));
   });
