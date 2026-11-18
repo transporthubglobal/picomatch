@@ -45,12 +45,12 @@ describe('options.maxExtglobRecursion', () => {
     ];
 
     for (const [input, pattern] of adversarialCases) {
-      const script = \`const { isMatch } = require('./');\\nisMatch(\${JSON.stringify(input)}, \${JSON.stringify(pattern)});\`;
+      const script = `const { isMatch } = require('./');\nisMatch(${JSON.stringify(input)}, ${JSON.stringify(pattern)});`;
       const result = spawnSync(process.execPath, ['-e', script], {
         encoding: 'utf8',
         timeout: 3000
       });
-      assert.strictEqual(result.error, undefined, \`adversarial case timed out: \${pattern}\`);
+      assert.strictEqual(result.error, undefined, `adversarial case timed out: ${pattern}`);
       assert.strictEqual(result.status, 0, result.stderr);
     }
 
