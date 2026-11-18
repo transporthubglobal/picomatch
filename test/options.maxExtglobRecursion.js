@@ -41,24 +41,26 @@ describe('options.maxExtglobRecursion', () => {
       '^(?:(?=.)a[^/]*?)$'
     );
 
-    const script = [
-      "const { isMatch } = require('./');",
-      "isMatch('a'.repeat(32) + 'y', '+(*)z');",
-      "isMatch('a'.repeat(32) + 'y', '+(*a)z');",
-      "isMatch('a'.repeat(32) + 'y', '+(*a*)z');",
-      // Exercise the advisory patterns without an added suffix.
-      "isMatch('a'.repeat(32) + '/', '+(*)');",
-      "isMatch('a'.repeat(32) + '!', '+(*a)');",
-      // Probe adjacent wildcard atoms, which must not bypass the safeguard.
-      "isMatch('ab'.repeat(24) + '!', '+(*a*b)');"
-    ].join(';');
+    const adversarialCases = [
+      ["a".repeat(32) + "y", "+(*)z"],
+      ["a".repeat(32) + "y", "+(*a)z"],
+      ["a".repeat(32) + "y", "+(*a*)z"],
+      // Exact advisory patterns, with a failing suffix to force backtracking.
+      ["a".repeat(32) + "/", "+(*)"],
+      ["a".repeat(32) + "!", "+(*a)"],
+      // Adjacent wildcard atoms are a separate bypass candidate.
+      ["ab".repeat(24) + "!", "+(*a*b)"]
+    ];
 
-    const result = spawnSync(process.execPath, ['-e', script], {
-      encoding: 'utf8',
-      timeout: 3000
-    });
-    assert.strictEqual(result.error, undefined, 'adversarial matching should complete within 3 seconds');
-    assert.strictEqual(result.status, 0, result.stderr);
+    for (const [input, pattern] of adversarialCases) {
+      const script = `const { isMatch } = require('./'); isMatch(${JSON.stringify(input)}, ${JSON.stringify(pattern)});`;
+      const result = spawnSync(process.execPath, ['-e', script], {
+        encoding: 'utf8',
+        timeout: 3000
+      });
+      assert.strictEqual(result.error, undefined, `adversarial case timed out: ${pattern}`);
+      assert.strictEqual(result.status, 0, result.stderr);
+    }
 
     assert(isMatch('abc', '+(*)'));
     assert(isMatch('bba', '+(*a)'));
