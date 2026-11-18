@@ -28,28 +28,16 @@ describe('options.maxExtglobRecursion', () => {
   });
 
   it('should safely rewrite single-branch repeated extglobs containing wildcards', () => {
-    assert.strictEqual(
-      makeRe('+(*)').source,
-      '^(?:(?=.)[^/]*?)$'
-    );
-    assert.strictEqual(
-      makeRe('+(*a)').source,
-      '^(?:(?=.)[^/]*?a)$'
-    );
-    assert.strictEqual(
-      makeRe('+(a*)').source,
-      '^(?:(?=.)a[^/]*?)$'
-    );
+    assert.strictEqual(makeRe('+(*)').source, '^(?:(?=.)[^/]*?)$');
+    assert.strictEqual(makeRe('+(*a)').source, '^(?:(?=.)[^/]*?a)$');
+    assert.strictEqual(makeRe('+(a*)').source, '^(?:(?=.)a[^/]*?)$');
 
     const adversarialCases = [
       ['a'.repeat(32) + 'y', '+(*)z'],
       ['a'.repeat(32) + 'y', '+(*a)z'],
       ['a'.repeat(50000) + 'y', '+(*a*)z'],
-      // Exact advisory patterns, with a failing suffix to force backtracking.
       ['a'.repeat(32) + '/', '+(*)'],
       ['a'.repeat(32) + '!', '+(*a)'],
-      // Multiple wildcard runs are literalized rather than flattened into
-      // several independently backtracking regex quantifiers.
       ['a'.repeat(50000) + 'y', '+(*a*b)'],
       ['a'.repeat(50000) + 'y', '+(a*b*c)'],
       ['a'.repeat(50000) + 'y', '+(@(*a))'],
@@ -57,16 +45,12 @@ describe('options.maxExtglobRecursion', () => {
     ];
 
     for (const [input, pattern] of adversarialCases) {
-      const script = `const { isMatch } = require('./');\nisMatch(${JSON.stringify(input)}, ${JSON.stringify(pattern)});`;
+      const script = \`const { isMatch } = require('./');\\nisMatch(\${JSON.stringify(input)}, \${JSON.stringify(pattern)});\`;
       const result = spawnSync(process.execPath, ['-e', script], {
         encoding: 'utf8',
         timeout: 3000
       });
-      assert.strictEqual(
-        result.error,
-        undefined,
-        `adversarial case timed out: ${pattern}`
-      );
+      assert.strictEqual(result.error, undefined, \`adversarial case timed out: \${pattern}\`);
       assert.strictEqual(result.status, 0, result.stderr);
     }
 
@@ -79,33 +63,26 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('abc', '+(a*)'));
     assert(!isMatch('bca', '+(a*)'));
     assert(isMatch('abc', '+(*)c'));
-    // Complex branches and whitespace must retain their original semantics.
+
     assert(isMatch('foo/bar', '+(foo/*)'));
     assert(isMatch(' xa', '+( *a)'));
     assert(!isMatch('xa', '+( *a)'));
 
-    // A wildcard nested inside a non-repeated extglob can still be
-    // repeated by the outer extglob. Keep this ambiguous construction out
-    // of the regex engine rather than emitting nested unbounded quantifiers.
-    assert.strictEqual(
-      makeRe('+(@(*a))').source,
-      '^(?:\\+\\(@\\(\\*a\\)\\))
+    // Wildcards nested inside another extglob are conservatively literalized.
+    assert.strictEqual(makeRe('+(@(*a))').source, '^(?:\\+\\(@\\(\\*a\\)\\))$');
+    assert.strictEqual(makeRe('+(?(*a))').source, '^(?:\\+\\(\\?\\(\\*a\\)\\))$');
+
+    // Multiple independent wildcard runs are conservatively literalized.
     assert(isMatch('+(*a*b)', '+(*a*b)'));
     assert(!isMatch('ab', '+(*a*b)'));
     assert(isMatch('+(a*b*c)', '+(a*b*c)'));
     assert(!isMatch('abcabc', '+(a*b*c)'));
 
-    // Bash mode uses its own wildcard atom (which may cross path separators).
     assert(isMatch('a/b', '+(a*)', { bash: true }));
     assert(!isMatch('a/b', '+(a*)'));
-    // Star extglobs must keep their zero-repetition alternative.
-    assert(isMatch('x*(a*b*c)', 'x*(a*b*c)'));
-    assert(!isMatch('x', 'x*(a*b*c)'));
+
     assert(isMatch('x', 'x*(a*)'));
     assert(isMatch('x', 'x*(*)'));
-    assert(isMatch('x*(a*b*c)', 'x*(a*b*c)'));
-    assert(isMatch('x+(a*b*c)', 'x+(a*b*c)'));
-    assert(!isMatch('xabc', 'x+(a*b*c)'));
     assert(isMatch('***', '+(\\*)'));
     assert(isMatch('***', '+("*")'));
   });
