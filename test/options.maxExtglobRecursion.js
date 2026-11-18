@@ -87,6 +87,12 @@ describe('options.maxExtglobRecursion', () => {
 
     // Bash mode uses its own wildcard atom (which may cross path separators).
     assert(isMatch('a/b', '+(a*b)', { bash: true }));
+    // Star extglobs must keep their zero-repetition alternative.
+    assert(isMatch('x', 'x*(a*b*c)'));
+    assert(!isMatch('xab', 'x*(a*b*c)'));
+    assert(isMatch('xabc', 'x+(a*b*c)'));
+    assert(isMatch('xabcabc', 'x*(a*b*c)'));
+    assert(!isMatch('x', 'x+(a*b*c)'));
     assert(isMatch('***', '+(\\*)'));
     assert(isMatch('***', '+("*")'));
   });
