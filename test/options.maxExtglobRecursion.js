@@ -42,23 +42,23 @@ describe('options.maxExtglobRecursion', () => {
     );
 
     const adversarialCases = [
-      ["a".repeat(32) + "y", "+(*)z"],
-      ["a".repeat(32) + "y", "+(*a)z"],
-      ["a".repeat(32) + "y", "+(*a*)z"],
+      ['a'.repeat(32) + 'y', '+(*)z'],
+      ['a'.repeat(32) + 'y', '+(*a)z'],
+      ['a'.repeat(32) + 'y', '+(*a*)z'],
       // Exact advisory patterns, with a failing suffix to force backtracking.
-      ["a".repeat(32) + "/", "+(*)"],
-      ["a".repeat(32) + "!", "+(*a)"],
+      ['a'.repeat(32) + '/', '+(*)'],
+      ['a'.repeat(32) + '!', '+(*a)'],
       // Adjacent wildcard atoms are a separate bypass candidate.
-      ["ab".repeat(24) + "!", "+(*a*b)"]
+      ['ab'.repeat(24) + '!', '+(*a*b)']
     ];
 
     for (const [input, pattern] of adversarialCases) {
-      const script = `const { isMatch } = require('./'); isMatch(${JSON.stringify(input)}, ${JSON.stringify(pattern)});`;
+      const script = `const { isMatch } = require('./');\nisMatch(${JSON.stringify(input)}, ${JSON.stringify(pattern)});`;
       const result = spawnSync(process.execPath, ['-e', script], {
         encoding: 'utf8',
         timeout: 3000
       });
-      assert.strictEqual(result.error, undefined, `adversarial case timed out: ${pattern}`);
+      assert.strictEqual(\n        result.error,\n        undefined,\n        `adversarial case timed out: ${pattern}`\n      );
       assert.strictEqual(result.status, 0, result.stderr);
     }
 
@@ -88,7 +88,7 @@ describe('options.maxExtglobRecursion', () => {
     // Bash mode uses its own wildcard atom (which may cross path separators).
     assert(isMatch('a/b', '+(a*b)', { bash: true }));
     // Star extglobs must keep their zero-repetition alternative.
-    assert(isMatch('x', 'x*(a*b*c)'));
+    assert(isMatch('x', 'x*(a*b*c)'));\n    assert(isMatch('x', 'x*(a*)'));\n    assert(isMatch('x', 'x*(*)'));
     assert(!isMatch('xab', 'x*(a*b*c)'));
     assert(isMatch('xabc', 'x+(a*b*c)'));
     assert(isMatch('xabcabc', 'x*(a*b*c)'));
