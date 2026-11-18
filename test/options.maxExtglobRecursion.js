@@ -44,12 +44,14 @@ describe('options.maxExtglobRecursion', () => {
     const adversarialCases = [
       ['a'.repeat(32) + 'y', '+(*)z'],
       ['a'.repeat(32) + 'y', '+(*a)z'],
-      ['a'.repeat(32) + 'y', '+(*a*)z'],
+      ['a'.repeat(50000) + 'y', '+(*a*)z'],
       // Exact advisory patterns, with a failing suffix to force backtracking.
       ['a'.repeat(32) + '/', '+(*)'],
       ['a'.repeat(32) + '!', '+(*a)'],
-      // Adjacent wildcard atoms are a separate bypass candidate.
-      ['ab'.repeat(24) + '!', '+(*a*b)']
+      // Multiple wildcard runs are literalized rather than flattened into
+      // several independently backtracking regex quantifiers.
+      ['a'.repeat(50000) + 'y', '+(*a*b)'],
+      ['a'.repeat(50000) + 'y', '+(a*b*c)']
     ];
 
     for (const [input, pattern] of adversarialCases) {
@@ -70,8 +72,8 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('bba', '+(*a)'));
     assert(isMatch('a', '+(*a)'));
     assert(!isMatch('bbb', '+(*a)'));
-    assert(isMatch('baac', '+(*a*)'));
-    assert(!isMatch('bbbb', '+(*a*)'));
+    assert(isMatch('+(*a*)', '+(*a*)'));
+    assert(!isMatch('baac', '+(*a*)'));
     assert(isMatch('abc', '+(a*)'));
     assert(!isMatch('bca', '+(a*)'));
     assert(isMatch('abc', '+(*)c'));
@@ -80,25 +82,24 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch(' xa', '+( *a)'));
     assert(!isMatch('xa', '+( *a)'));
 
-    // Multiple wildcard atoms in a simple branch are flattened without
-    // changing the repeated branch's language.
-    assert(isMatch('ab', '+(*a*b)'));
-    assert(isMatch('aabb', '+(*a*b)'));
-    assert(isMatch('abab', '+(*a*b)'));
-    assert(!isMatch('bb', '+(*a*b)'));
-    assert(isMatch('abcabc', '+(a*b*c)'));
-    assert(!isMatch('acac', '+(a*b*c)'));
+    // Multiple wildcard runs are conservatively literalized; do not emit
+    // a regex with several independently backtracking quantifiers.
+    assert(isMatch('+(*a*b)', '+(*a*b)'));
+    assert(!isMatch('ab', '+(*a*b)'));
+    assert(isMatch('+(a*b*c)', '+(a*b*c)'));
+    assert(!isMatch('abcabc', '+(a*b*c)'));
 
     // Bash mode uses its own wildcard atom (which may cross path separators).
-    assert(isMatch('a/b', '+(a*b)', { bash: true }));
+    assert(isMatch('a/b', '+(a*)', { bash: true }));
+    assert(!isMatch('a/b', '+(a*)'));
     // Star extglobs must keep their zero-repetition alternative.
-    assert(isMatch('x', 'x*(a*b*c)'));
+    assert(isMatch('x*(a*b*c)', 'x*(a*b*c)'));
+    assert(!isMatch('x', 'x*(a*b*c)'));
     assert(isMatch('x', 'x*(a*)'));
     assert(isMatch('x', 'x*(*)'));
-    assert(!isMatch('xab', 'x*(a*b*c)'));
-    assert(isMatch('xabc', 'x+(a*b*c)'));
-    assert(isMatch('xabcabc', 'x*(a*b*c)'));
-    assert(!isMatch('x', 'x+(a*b*c)'));
+    assert(isMatch('x*(a*b*c)', 'x*(a*b*c)'));
+    assert(isMatch('x+(a*b*c)', 'x+(a*b*c)'));
+    assert(!isMatch('xabc', 'x+(a*b*c)'));
     assert(isMatch('***', '+(\\*)'));
     assert(isMatch('***', '+("*")'));
   });
