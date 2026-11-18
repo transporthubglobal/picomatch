@@ -45,7 +45,12 @@ describe('options.maxExtglobRecursion', () => {
       "const { isMatch } = require('./');",
       "isMatch('a'.repeat(32) + 'y', '+(*)z');",
       "isMatch('a'.repeat(32) + 'y', '+(*a)z');",
-      "isMatch('a'.repeat(32) + 'y', '+(*a*)z');"
+      "isMatch('a'.repeat(32) + 'y', '+(*a*)z');",
+      // Exercise the advisory patterns without an added suffix.
+      "isMatch('a'.repeat(32) + '/', '+(*)');",
+      "isMatch('a'.repeat(32) + '!', '+(*a)');",
+      // Probe adjacent wildcard atoms, which must not bypass the safeguard.
+      "isMatch('ab'.repeat(24) + '!', '+(*a*b)');"
     ].join(';');
 
     const result = spawnSync(process.execPath, ['-e', script], {
