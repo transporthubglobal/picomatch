@@ -58,7 +58,11 @@ describe('options.maxExtglobRecursion', () => {
         encoding: 'utf8',
         timeout: 3000
       });
-      assert.strictEqual(\n        result.error,\n        undefined,\n        `adversarial case timed out: ${pattern}`\n      );
+      assert.strictEqual(
+        result.error,
+        undefined,
+        `adversarial case timed out: ${pattern}`
+      );
       assert.strictEqual(result.status, 0, result.stderr);
     }
 
@@ -88,7 +92,9 @@ describe('options.maxExtglobRecursion', () => {
     // Bash mode uses its own wildcard atom (which may cross path separators).
     assert(isMatch('a/b', '+(a*b)', { bash: true }));
     // Star extglobs must keep their zero-repetition alternative.
-    assert(isMatch('x', 'x*(a*b*c)'));\n    assert(isMatch('x', 'x*(a*)'));\n    assert(isMatch('x', 'x*(*)'));
+    assert(isMatch('x', 'x*(a*b*c)'));
+    assert(isMatch('x', 'x*(a*)'));
+    assert(isMatch('x', 'x*(*)'));
     assert(!isMatch('xab', 'x*(a*b*c)'));
     assert(isMatch('xabc', 'x+(a*b*c)'));
     assert(isMatch('xabcabc', 'x*(a*b*c)'));
