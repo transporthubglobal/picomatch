@@ -83,7 +83,7 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('abab', '+(*a*b)'));
     assert(!isMatch('bb', '+(*a*b)'));
     assert(isMatch('abcabc', '+(a*b*c)'));
-    assert(!isMatch('acbac', '+(a*b*c)'));
+    assert(!isMatch('acac', '+(a*b*c)'));
 
     // Bash mode uses its own wildcard atom (which may cross path separators).
     assert(isMatch('a/b', '+(a*b)', { bash: true }));
