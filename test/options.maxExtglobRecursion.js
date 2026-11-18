@@ -44,7 +44,8 @@ describe('options.maxExtglobRecursion', () => {
     const script = [
       "const { isMatch } = require('./');",
       "isMatch('a'.repeat(32) + 'y', '+(*)z');",
-      "isMatch('a'.repeat(32) + 'y', '+(*a)z');"
+      "isMatch('a'.repeat(32) + 'y', '+(*a)z');",
+      "isMatch('a'.repeat(32) + 'y', '+(*a*)z');"
     ].join(';');
 
     const result = spawnSync(process.execPath, ['-e', script], {
@@ -58,6 +59,8 @@ describe('options.maxExtglobRecursion', () => {
     assert(isMatch('bba', '+(*a)'));
     assert(isMatch('a', '+(*a)'));
     assert(!isMatch('bbb', '+(*a)'));
+    assert(isMatch('baac', '+(*a*)'));
+    assert(!isMatch('bbbb', '+(*a*)'));
     assert(isMatch('abc', '+(a*)'));
     assert(!isMatch('bca', '+(a*)'));
     assert(isMatch('abc', '+(*)c'));
